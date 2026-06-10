@@ -1,0 +1,12 @@
+# Local GGUF Connection Environment Files
+index_local.html
+app_local.js
+style_local.css
+GGUFチャット起動.bat
+Modelfile
+Modelfile_*
+res.txt
+
+# OS metadata
+.DS_Store
+Thumbs.db
