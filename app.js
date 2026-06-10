@@ -98,6 +98,29 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// Generate deep links to launch Chrome or Edge based on user OS
+function getBrowserOpenLinks() {
+    const rawUrl = window.location.href.replace(/^https?:\/\//, '');
+    const isHttps = window.location.protocol === 'https:';
+    
+    const ua = navigator.userAgent.toLowerCase();
+    const isAndroid = ua.indexOf('android') > -1;
+    const isIOS = /ipad|iphone|ipod/.test(ua) && !window.MSStream;
+    
+    let chromeUrl = 'https://www.google.com/chrome/';
+    let edgeUrl = 'https://www.microsoft.com/edge/';
+    
+    if (isAndroid) {
+        chromeUrl = `intent://${rawUrl}#Intent;scheme=${isHttps ? 'https' : 'http'};package=com.android.chrome;end`;
+        edgeUrl = `intent://${rawUrl}#Intent;scheme=${isHttps ? 'https' : 'http'};package=com.microsoft.emmx;end`;
+    } else if (isIOS) {
+        chromeUrl = `${isHttps ? 'googlechromes' : 'googlechrome'}://${rawUrl}`;
+        edgeUrl = `microsoft-edge-${isHttps ? 'https' : 'http'}://${rawUrl}`;
+    }
+    
+    return { chromeUrl, edgeUrl, isMobile: (isAndroid || isIOS) };
+}
+
 // Sync WebGPU Support Status
 function checkWebGPUSupport() {
     if (navigator.gpu) {
@@ -114,21 +137,46 @@ function checkWebGPUSupport() {
         modelSelect.setAttribute('disabled', 'true');
         btnLoadModel.setAttribute('disabled', 'true');
         
-        // Show prominent warning dialog in chat window
+        const links = getBrowserOpenLinks();
+        
+        // Show prominent warning dialog in chat window with app launcher actions
         welcomeScreen.innerHTML = `
             <div class="welcome-icon" style="color: #ef4444;">⚠️</div>
             <h2>WebGPU 非対応ブラウザです</h2>
             <p style="color: #fca5a5; max-width: 600px; margin: 0 auto 20px auto;">
                 このアプリケーションはブラウザ内で直接AIモデルを実行するために最新の <strong>WebGPU</strong> 技術を必要とします。<br>
-                お使いの端末またはブラウザはWebGPUに対応していないか、有効化されていません。
+                X（旧Twitter）やLINE等のアプリ内ブラウザはWebGPUに対応していません。
             </p>
+            
+            <div class="fallback-action-container" style="display: flex; flex-direction: column; gap: 12px; margin: 24px auto; width: 100%; max-width: 320px;">
+                <a href="${links.chromeUrl}" class="btn btn-primary" style="text-decoration: none; justify-content: center; padding: 12px 16px; font-size: 14px;">Google Chrome で開く</a>
+                <a href="${links.edgeUrl}" class="btn" style="text-decoration: none; justify-content: center; padding: 12px 16px; font-size: 14px; background: rgba(255, 255, 255, 0.04);">Microsoft Edge で開く</a>
+                <button id="btn-copy-url" class="btn" style="justify-content: center; padding: 12px 16px; font-size: 14px; background: rgba(255, 255, 255, 0.04);">URLをコピーする</button>
+            </div>
+
             <div class="quick-instructions" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.05);">
                 <strong>💡 利用方法:</strong><br><br>
-                1. <strong>Google Chrome</strong> または <strong>Microsoft Edge</strong> (バージョン113以降) をご利用ください。<br>
-                2. ハードウェアアクセラレーション（GPU使用）設定がブラウザで有効になっていることを確認してください。<br>
-                3. スマートフォンの場合は、現時点では一部のAndroid端末のみサポートされています。
+                1. 上記のボタンから対応ブラウザを起動するか、URLをコピーして <strong>Google Chrome</strong> または <strong>Microsoft Edge</strong> に貼り付けて開いてください。<br>
+                2. スマホの場合は、Androidの最新Chrome等で動作します。iOS（iPhone）は現在Safari/ChromeともにWebGPUの実験的サポート段階です（iOS17.6+以上推奨）。
             </div>
         `;
+        
+        // Attach listener for clipboard URL copy
+        document.getElementById('btn-copy-url').addEventListener('click', () => {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                const btn = document.getElementById('btn-copy-url');
+                btn.textContent = 'コピーしました！';
+                btn.style.borderColor = '#10b981';
+                btn.style.color = '#10b981';
+                setTimeout(() => {
+                    btn.textContent = 'URLをコピーする';
+                    btn.style.borderColor = '';
+                    btn.style.color = '';
+                }, 2000);
+            }).catch(err => {
+                alert('コピーに失敗しました。以下のURLを手動でコピーしてください:\n' + window.location.href);
+            });
+        });
     }
 }
 
