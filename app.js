@@ -311,17 +311,18 @@ async function handleSend() {
     const assistantBubble = addMessageToUI('assistant', '');
     btnClearChat.removeAttribute('disabled');
 
-    // Manual ChatML formatting (more reliable for specific Qwen GGUFs)
+    // Construct messages array for Wllama's built-in Jinja template engine
     const systemPrompt = paramSystem.value.trim();
-    let prompt = "";
+    const messages = [];
     if (systemPrompt) {
-        prompt += `<|im_start|>system\n${systemPrompt}<|im_end|>\n`;
+        messages.push({ role: 'system', content: systemPrompt });
     }
     chatHistory.forEach(msg => {
-        const role = msg.role === 'user' ? 'user' : 'assistant';
-        prompt += `<|im_start|>${role}\n${msg.content}<|im_end|>\n`;
+        messages.push({
+            role: msg.role === 'user' ? 'user' : 'assistant',
+            content: msg.content
+        });
     });
-    prompt += `<|im_start|>assistant\n`;
 
     const params = {
         max_tokens: parseInt(paramMaxTokens.value),
@@ -332,7 +333,7 @@ async function handleSend() {
         repeat_penalty: parseFloat(paramRepeatPenalty.value),
         mirostat: parseInt(paramMirostat.value),
         mirostat_tau: parseFloat(paramMirostatTau.value),
-        stop: ["<|im_end|>", "<|im_start|>", "assistant\n"]
+        stop: ["<|im_end|>", "<|im_start|>"]
     };
 
     const seed = parseInt(paramSeed.value);
@@ -342,13 +343,13 @@ async function handleSend() {
     let hasStartedReplying = false;
 
     try {
-        await wllama.createCompletion({
-            prompt: prompt,
+        await wllama.createChatCompletion({
+            messages: messages,
             ...params,
             stream: true,
             onData: (chunk) => {
-                const tokenText = chunk.choices[0]?.text || '';
-                if (!hasStartedReplying) {
+                const tokenText = chunk.choices[0]?.delta?.content || '';
+                if (!hasStartedReplying && tokenText !== '') {
                     assistantBubble.innerHTML = '';
                     hasStartedReplying = true;
                 }
