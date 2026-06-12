@@ -342,14 +342,17 @@ async function handleSend() {
     let hasStartedReplying = false;
     
     try {
-        await wllama.createCompletion(prompt, {
+        await wllama.createCompletion({
+            prompt: prompt,
             ...params,
-            onNewToken: (token, piece, currentText) => {
+            stream: true,
+            onData: (chunk) => {
+                const tokenText = chunk.choices[0]?.text || '';
                 if (!hasStartedReplying) {
                     assistantBubble.innerHTML = '';
                     hasStartedReplying = true;
                 }
-                fullReply = currentText;
+                fullReply += tokenText;
                 assistantBubble.innerHTML = marked.parse(fullReply);
                 scrollToBottom();
             }
