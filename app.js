@@ -2,10 +2,7 @@ import { Wllama } from "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.4.1/esm/in
 
 // --- Configuration ---
 const WLLAMA_CONFIG_PATHS = {
-    "single-thread/wllama.wasm": "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.4.1/esm/single-thread/wllama.wasm",
-    "single-thread/wllama.js": "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.4.1/esm/single-thread/wllama.js",
-    "multi-thread/wllama.wasm": "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.4.1/esm/multi-thread/wllama.wasm",
-    "multi-thread/wllama.js": "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.4.1/esm/multi-thread/wllama.js",
+    "default": "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.4.1/esm/wasm/wllama.wasm",
 };
 
 const CONFIG = {
