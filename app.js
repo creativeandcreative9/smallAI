@@ -207,10 +207,12 @@ async function initWllama() {
         progressMessage.textContent = 'モデルのダウンロード中...';
 
         await wllama.loadModelFromUrl(CONFIG.modelUrl, {
-            n_ctx: 1024,             // Aggressively reduce context size to 1k for stability
+            n_ctx: 1024,             // Reduce context size for browser stability
+            n_batch: 128,            // Limit batch size to reduce memory spikes
             cache_type_k: 'q4_0',    // Quantize KV cache to save memory
             cache_type_v: 'q4_0',    // Quantize KV cache to save memory
             n_threads: 1,            // Force single-thread (GitHub Pages lacks COOP/COEP for SharedArrayBuffer)
+            useCache: false,         // Force fresh download to bypass any corrupted cache from previous 404
             progressCallback: ({ loaded, total }) => {
                 const percent = Math.round((loaded / total) * 100);
                 progressBar.style.width = `${percent}%`;

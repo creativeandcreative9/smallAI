@@ -39,8 +39,9 @@ D:\Claude-Knowledge\P06_LLM\
     *   例: `python -m http.server 8085` を実行し、`http://localhost:8085` にアクセスする。
 *   **特徴**: 
     *   ブラウザ側で `Wllama` を使って特定のGGUFモデル（Qwen3-0.6B）をダウンロード・キャッシュし、ブラウザ上で推論します（WASM/CPU利用）。
+    *   **安定性設定**: ブラウザのメモリ制限による `((ABORT))` エラーを回避するため、コンテキストサイズを `n_ctx: 1024` に制限し、KVキャッシュを `q4_0` に量子化して運用しています。
     *   初回のみダウンロード待ちが発生しますが、次回以降はインターネットが切れていても起動します。
-    *   WebGPU非対応ブラウザでも動作します。
+    *   WebGPU非対応ブラウザ（iOS Safari、古いChrome等）でも動作します。
 
 ### B. ローカル接続環境（Ollama / llama.cpp 接続用）
 *   **起動方法**: `index_local.html` をブラウザで直接ダブルクリックで開くだけで起動します。
@@ -51,11 +52,12 @@ D:\Claude-Knowledge\P06_LLM\
 ---
 
 ## 📝 完了した作業
-1.  **Wllamaチャットの実装**: `index.html` / `app.js` / `style.css` の新規作成および書き換え。
-2.  **GGUF自動ロード機能**: サイトアクセス時に `Qwen3-0.6B-Uncensored-i1-Q4_K_S.gguf` を自動取得する仕組みを構築。
-3.  **UIの最適化**: システムプロンプトをサイドバートップへ移動し、即座にカスタマイズ可能な構成へ変更。
-4.  **ローカル環境の完全分離と復元**: `index_local.html` / `app_local.js` / `style_local.css` の作成による、これまでのOllama接続チャット機能の維持。
-5.  **`.gitignore` の設定**: ローカル用のコードやバッチ、Modelfileを誤ってGitHubにプッシュしないように保護。
+1.  **Wllamaチャットの実装**: `index.html` / `app.js` / `style.css` の書き換えにより、WebLLM(WebGPU)からWllama(WASM)へ完全移行。
+2.  **GGUF自動ロード機能**: サイトアクセス時に `Qwen3-0.6B-Uncensored-i1-Q4_K_S.gguf` を自動取得する「ゼロクリック体験」を構築。
+3.  **UIの最適化**: システムプロンプトをサイドバートップへ移動し、即座にAIの性格をカスタマイズ可能な構成へ変更。
+4.  **推論安定化の実施**: `((ABORT))` クラッシュ対策として、メモリ消費を極限まで抑える設定（コンテキスト制限・キャッシュ量子化）を適用済み。
+5.  **ローカル環境の完全分離と復元**: `index_local.html` / `app_local.js` / `style_local.css` の作成による、これまでのOllama接続チャット機能の維持。
+6.  **`.gitignore` の設定**: ローカル用のコードやバッチ、Modelfileを誤ってGitHubにプッシュしないように保護。
 
 ---
 
