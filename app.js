@@ -200,9 +200,7 @@ async function initWllama() {
     try {
         // Create Wllama instance
         wllama = new Wllama({
-            "bootstrap-wasi": `${CONFIG.wasmPath}wasi-js-bootstrap.wasm`,
-            "bootstrap-llama": `${CONFIG.wasmPath}wllama-bootstrap.wasm`,
-            "worker": `${CONFIG.wasmPath}wllama-worker.js`,
+            "default": `${CONFIG.wasmPath}wasm/wllama.wasm`
         });
 
         progressMessage.textContent = 'モデルのダウンロード中...';
@@ -306,28 +304,23 @@ async function handleSend() {
     const assistantBubble = addMessageToUI('assistant', '');
     btnClearChat.removeAttribute('disabled');
     
-    // Format prompt for Qwen (ChatML-like)
+    // Setup message sequence
     const systemPrompt = paramSystem.value.trim();
-    let prompt = "";
+    const messages = [];
     if (systemPrompt) {
-        prompt += `<|im_start|>system\n${systemPrompt}<|im_end|>\n`;
+        messages.push({ role: 'system', content: systemPrompt });
     }
-    chatHistory.forEach(msg => {
-        const role = msg.role === 'user' ? 'user' : 'assistant';
-        prompt += `<|im_start|>${role}\n${msg.content}<|im_end|>\n`;
-    });
-    prompt += `<|im_start|>assistant\n`;
+    messages.push(...chatHistory);
     
     const params = {
-        n_predict: parseInt(paramMaxTokens.value),
+        max_tokens: parseInt(paramMaxTokens.value),
         temperature: parseFloat(paramTemp.value),
         top_p: parseFloat(paramTopP.value),
         min_p: parseFloat(paramMinP.value),
         top_k: parseInt(paramTopK.value),
-        repeat_penalty: parseFloat(paramRepeatPenalty.value),
+        penalty_repeat: parseFloat(paramRepeatPenalty.value),
         mirostat: parseInt(paramMirostat.value),
-        mirostat_tau: parseFloat(paramMirostatTau.value),
-        stop: ["<|im_end|>", "<|im_start|>", "assistant\n"],
+        mirostat_tau: parseFloat(paramMirostatTau.value)
     };
     
     const seed = parseInt(paramSeed.value);
@@ -337,18 +330,24 @@ async function handleSend() {
     let hasStartedReplying = false;
     
     try {
-        await wllama.createCompletion(prompt, {
-            ...params,
-            onNewToken: (token, piece, currentText) => {
+        const stream = await wllama.createChatCompletion({
+            messages,
+            stream: true,
+            ...params
+        });
+        
+        for await (const chunk of stream) {
+            const token = chunk.choices[0]?.delta?.content;
+            if (token) {
                 if (!hasStartedReplying) {
                     assistantBubble.innerHTML = '';
                     hasStartedReplying = true;
                 }
-                fullReply = currentText;
+                fullReply += token;
                 assistantBubble.innerHTML = marked.parse(fullReply);
                 scrollToBottom();
             }
-        });
+        }
         
         chatHistory.push({ role: 'assistant', content: fullReply });
         
