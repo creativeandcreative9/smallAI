@@ -1,18 +1,21 @@
-import { CreateWebWorkerMLCEngine } from "https://esm.run/@mlc-ai/web-llm";
+import { Wllama } from "https://cdn.jsdelivr.net/npm/@wllama/wllama/esm/index.js";
+
+// --- Configuration ---
+const CONFIG = {
+    modelUrl: "https://huggingface.co/mradermacher/Qwen3-0.6B-Uncensored-i1-GGUF/resolve/main/Qwen3-0.6B-Uncensored-i1-Q4_K_S.gguf",
+    modelName: "Qwen3-0.6B-Uncensored (GGUF)",
+    wasmPath: "https://cdn.jsdelivr.net/npm/@wllama/wllama/esm/" // Standard CDN path
+};
 
 // --- State Management ---
-let engine = null;
-let selectedModel = 'gemma-2-2b-it-q4f16_1-MLC';
+let wllama = null;
 let chatHistory = [];
 let isGenerating = false;
 let isModelLoaded = false;
-let webgpuSupported = false;
 
 // --- DOM Elements ---
 const statusIndicator = document.getElementById('status-indicator');
 const statusText = document.getElementById('status-text');
-const modelSelect = document.getElementById('model-select');
-const btnLoadModel = document.getElementById('btn-load-model');
 
 // Progress UI
 const progressSection = document.getElementById('progress-section');
@@ -37,7 +40,7 @@ const paramSeed = document.getElementById('param-seed');
 const paramSystem = document.getElementById('param-system');
 const btnResetParams = document.getElementById('btn-reset-params');
 
-// Mirostat DOM (Deprecated for WebLLM but kept visually for layout compatibility)
+// Mirostat DOM
 const paramMirostat = document.getElementById('param-mirostat');
 const mirostatTauGroup = document.getElementById('mirostat-tau-group');
 const paramMirostatTau = document.getElementById('param-mirostat-tau');
@@ -60,7 +63,7 @@ const DEFAULTS = {
     topP: 0.9,
     minP: 0.05,
     topK: 40,
-    maxTokens: 2048,
+    maxTokens: 1024,
     repeatPenalty: 1.1,
     seed: -1,
     system: "You are a helpful, respectful, and honest assistant."
@@ -77,16 +80,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         gfm: true
     });
     
-    // 3. Check WebGPU Compatibility
-    checkWebGPUSupport();
-    
-    // 4. Load saved settings from localStorage
+    // 3. Load saved settings from localStorage
     loadSettings();
 
-    // 5. Setup Mobile Sidebar Toggle
+    // 4. Setup Mobile Sidebar Toggle
     sidebarToggle.addEventListener('click', () => {
         sidebar.classList.toggle('open');
     });
+
+    // 5. Automatic Model Loading (Zero-Click)
+    initWllama();
 });
 
 // Close sidebar on click outside in mobile
@@ -98,97 +101,6 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Generate deep links to launch Chrome or Edge based on user OS
-function getBrowserOpenLinks() {
-    const rawUrl = window.location.href.replace(/^https?:\/\//, '');
-    const isHttps = window.location.protocol === 'https:';
-    
-    const ua = navigator.userAgent.toLowerCase();
-    const isAndroid = ua.indexOf('android') > -1;
-    const isIOS = /ipad|iphone|ipod/.test(ua) && !window.MSStream;
-    
-    let chromeUrl = 'https://www.google.com/chrome/';
-    let edgeUrl = 'https://www.microsoft.com/edge/';
-    
-    if (isAndroid) {
-        chromeUrl = `intent://${rawUrl}#Intent;scheme=${isHttps ? 'https' : 'http'};package=com.android.chrome;end`;
-        edgeUrl = `intent://${rawUrl}#Intent;scheme=${isHttps ? 'https' : 'http'};package=com.microsoft.emmx;end`;
-    } else if (isIOS) {
-        chromeUrl = `${isHttps ? 'googlechromes' : 'googlechrome'}://${rawUrl}`;
-        edgeUrl = `microsoft-edge-${isHttps ? 'https' : 'http'}://${rawUrl}`;
-    }
-    
-    return { chromeUrl, edgeUrl, isMobile: (isAndroid || isIOS) };
-}
-
-// Sync WebGPU Support Status
-function checkWebGPUSupport() {
-    if (navigator.gpu) {
-        webgpuSupported = true;
-        statusIndicator.className = 'status-indicator-dot connected';
-        statusText.textContent = 'WebGPU 利用可能';
-        modelSelect.removeAttribute('disabled');
-        btnLoadModel.removeAttribute('disabled');
-    } else {
-        webgpuSupported = false;
-        statusIndicator.className = 'status-indicator-dot disconnected';
-        statusText.textContent = 'WebGPU 非対応';
-        statusText.style.color = '#ef4444';
-        modelSelect.setAttribute('disabled', 'true');
-        btnLoadModel.setAttribute('disabled', 'true');
-        
-        const links = getBrowserOpenLinks();
-        
-        // Show prominent warning dialog in chat window with app launcher actions
-        welcomeScreen.innerHTML = `
-            <div class="welcome-icon" style="color: #ef4444;">⚠️</div>
-            <h2>WebGPU 非対応ブラウザです</h2>
-            <p style="color: #fca5a5; max-width: 600px; margin: 0 auto 20px auto;">
-                このアプリケーションはブラウザ内で直接AIモデルを実行するために最新の <strong>WebGPU</strong> 技術を必要とします。<br>
-                X（旧Twitter）やLINE等のアプリ内ブラウザはWebGPUに対応していません。
-            </p>
-            
-            <div class="fallback-action-container" style="display: flex; flex-direction: column; gap: 12px; margin: 24px auto; width: 100%; max-width: 320px;">
-                <a href="${links.chromeUrl}" class="btn btn-primary" style="text-decoration: none; justify-content: center; padding: 12px 16px; font-size: 14px;">Google Chrome で開く</a>
-                <a href="${links.edgeUrl}" class="btn" style="text-decoration: none; justify-content: center; padding: 12px 16px; font-size: 14px; background: rgba(255, 255, 255, 0.04);">Microsoft Edge で開く</a>
-                <button id="btn-copy-url" class="btn" style="justify-content: center; padding: 12px 16px; font-size: 14px; background: rgba(255, 255, 255, 0.04);">URLをコピーする</button>
-            </div>
-
-            <div class="quick-instructions" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.05);">
-                <strong>💡 利用方法:</strong><br><br>
-                1. 上記のボタンから対応ブラウザを起動するか、URLをコピーして <strong>Google Chrome</strong> または <strong>Microsoft Edge</strong> に貼り付けて開いてください。<br>
-                2. スマホの場合は、Androidの最新Chrome等で動作します。iOS（iPhone）は現在Safari/ChromeともにWebGPUの実験的サポート段階です（iOS17.6+以上推奨）。
-            </div>
-        `;
-        
-        // Attach listener for clipboard URL copy
-        document.getElementById('btn-copy-url').addEventListener('click', () => {
-            navigator.clipboard.writeText(window.location.href).then(() => {
-                const btn = document.getElementById('btn-copy-url');
-                btn.textContent = 'コピーしました！';
-                btn.style.borderColor = '#10b981';
-                btn.style.color = '#10b981';
-                setTimeout(() => {
-                    btn.textContent = 'URLをコピーする';
-                    btn.style.borderColor = '';
-                    btn.style.color = '';
-                }, 2000);
-            }).catch(err => {
-                alert('コピーに失敗しました。以下のURLを手動でコピーしてください:\n' + window.location.href);
-            });
-        });
-    }
-}
-
-// Model Selection Changed
-modelSelect.addEventListener('change', (e) => {
-    selectedModel = e.target.value;
-    saveSettings();
-});
-
-// Initialize / Load Model Trigger
-btnLoadModel.addEventListener('click', loadWebGPUModel);
-
 // Sliders Syncing Events
 paramTemp.addEventListener('input', (e) => { valTemp.textContent = e.target.value; });
 paramTopP.addEventListener('input', (e) => { valTopP.textContent = e.target.value; });
@@ -198,13 +110,8 @@ paramMaxTokens.addEventListener('input', (e) => { valMaxTokens.textContent = e.t
 paramRepeatPenalty.addEventListener('input', (e) => { valRepeatPenalty.textContent = e.target.value; });
 paramMirostatTau.addEventListener('input', (e) => { valMirostatTau.textContent = e.target.value; });
 
-// Mirostat compatibility
 paramMirostat.addEventListener('change', (e) => {
-    if (e.target.value === '0') {
-        mirostatTauGroup.style.display = 'none';
-    } else {
-        mirostatTauGroup.style.display = 'block';
-    }
+    mirostatTauGroup.style.display = e.target.value === '0' ? 'none' : 'block';
     saveSettings();
 });
 
@@ -219,25 +126,18 @@ saveTriggers.forEach(el => {
 btnResetParams.addEventListener('click', () => {
     paramTemp.value = DEFAULTS.temp;
     valTemp.textContent = DEFAULTS.temp;
-    
     paramTopP.value = DEFAULTS.topP;
     valTopP.textContent = DEFAULTS.topP;
-
     paramMinP.value = DEFAULTS.minP;
     valMinP.textContent = DEFAULTS.minP;
-
     paramTopK.value = DEFAULTS.topK;
     valTopK.textContent = DEFAULTS.topK;
-    
     paramMaxTokens.value = DEFAULTS.maxTokens;
     valMaxTokens.textContent = DEFAULTS.maxTokens;
-
     paramRepeatPenalty.value = DEFAULTS.repeatPenalty;
     valRepeatPenalty.textContent = DEFAULTS.repeatPenalty;
-
     paramSeed.value = DEFAULTS.seed;
     paramSystem.value = DEFAULTS.system;
-    
     saveSettings();
 });
 
@@ -277,76 +177,65 @@ function autoResizeTextarea(textarea) {
 
 function updateActiveModelDisplay() {
     if (isModelLoaded) {
-        activeModelDisplay.textContent = selectedModel;
+        activeModelDisplay.textContent = CONFIG.modelName;
         chatInput.removeAttribute('disabled');
         btnSend.removeAttribute('disabled');
         chatInput.placeholder = "メッセージを入力してください...";
     } else {
-        activeModelDisplay.textContent = "モデル未ロード";
+        activeModelDisplay.textContent = "初期化中...";
         chatInput.setAttribute('disabled', 'true');
         btnSend.setAttribute('disabled', 'true');
-        chatInput.placeholder = "左側でモデルをロードするとチャットを開始できます";
+        chatInput.placeholder = "AIの準備が完了するまでお待ちください...";
     }
 }
 
-// Load WebGPU Model using Worker
-async function loadWebGPUModel() {
-    if (!webgpuSupported) return;
-
-    btnLoadModel.setAttribute('disabled', 'true');
-    modelSelect.setAttribute('disabled', 'true');
-    progressSection.style.display = 'block';
-    
+// Initialize Wllama and Load Model
+async function initWllama() {
     statusIndicator.className = 'status-indicator-dot loading';
-    statusText.textContent = 'モデルロード中...';
-
-    progressMessage.textContent = '初期化中...';
-    progressPercent.textContent = '0%';
-    progressBar.style.width = '0%';
+    statusText.textContent = 'エンジン初期化中...';
+    
+    progressSection.style.display = 'block';
+    progressMessage.textContent = 'エンジンの読み込み中...';
 
     try {
-        // Create the background Web Worker
-        const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
-        
-        // Initialize WebWorker MLCEngine
-        engine = await CreateWebWorkerMLCEngine(worker, selectedModel, {
-            initProgressCallback: (report) => {
-                // report contains progress (0 to 1) and text description
-                const percent = Math.round(report.progress * 100);
+        // Create Wllama instance
+        wllama = new Wllama({
+            "bootstrap-wasi": `${CONFIG.wasmPath}wasi-js-bootstrap.wasm`,
+            "bootstrap-llama": `${CONFIG.wasmPath}wllama-bootstrap.wasm`,
+            "worker": `${CONFIG.wasmPath}wllama-worker.js`,
+        });
+
+        progressMessage.textContent = 'モデルのダウンロード中...';
+
+        await wllama.loadModelFromUrl(CONFIG.modelUrl, {
+            progressCallback: ({ loaded, total }) => {
+                const percent = Math.round((loaded / total) * 100);
                 progressBar.style.width = `${percent}%`;
                 progressPercent.textContent = `${percent}%`;
-                
-                // Truncate overly long descriptions for cleaner layout
-                let cleanMsg = report.text;
-                if (cleanMsg.includes(']')) {
-                    cleanMsg = cleanMsg.substring(cleanMsg.indexOf(']') + 1).trim();
-                }
-                progressMessage.textContent = cleanMsg;
+                progressMessage.textContent = `ダウンロード中: ${(loaded / 1024 / 1024).toFixed(1)}MB / ${(total / 1024 / 1024).toFixed(1)}MB`;
             }
         });
 
         isModelLoaded = true;
         statusIndicator.className = 'status-indicator-dot connected';
-        statusText.textContent = 'ロード完了';
+        statusText.textContent = '準備完了';
         progressMessage.textContent = 'ロード成功！チャットができます。';
         progressBar.style.width = '100%';
         progressPercent.textContent = '100%';
 
         updateActiveModelDisplay();
-        saveSettings();
         
-        // Focus chat input
-        chatInput.focus();
+        // Hide progress section after success
+        setTimeout(() => {
+            progressSection.style.display = 'none';
+        }, 3000);
 
     } catch (error) {
-        console.error("Model loading failed:", error);
+        console.error("Wllama initialization failed:", error);
         statusIndicator.className = 'status-indicator-dot disconnected';
         statusText.textContent = 'ロード失敗';
         progressMessage.textContent = `エラー: ${error.message}`;
         alert(`モデルのロード中にエラーが発生しました。\n\n詳細: ${error.message}`);
-    } finally {
-        btnLoadModel.removeAttribute('disabled');
-        modelSelect.removeAttribute('disabled');
     }
 }
 
@@ -361,13 +250,12 @@ function addMessageToUI(role, content) {
     
     const metaDiv = document.createElement('div');
     metaDiv.className = 'message-meta';
-    metaDiv.textContent = role === 'user' ? 'あなた' : selectedModel;
+    metaDiv.textContent = role === 'user' ? 'あなた' : 'AI';
     
     const bubbleDiv = document.createElement('div');
     bubbleDiv.className = 'message-bubble';
     
     if (content === '') {
-        // Typing placeholder
         bubbleDiv.innerHTML = `
             <div class="typing-loader">
                 <div class="typing-dot"></div>
@@ -384,7 +272,6 @@ function addMessageToUI(role, content) {
     chatHistoryDiv.appendChild(messageDiv);
     
     scrollToBottom();
-    
     return bubbleDiv;
 }
 
@@ -396,24 +283,19 @@ function clearChat() {
     chatHistory = [];
     const messages = chatHistoryDiv.querySelectorAll('.message');
     messages.forEach(m => m.remove());
-    
-    if (welcomeScreen) {
-        welcomeScreen.style.display = 'flex';
-    }
-    
+    if (welcomeScreen) welcomeScreen.style.display = 'flex';
     btnClearChat.setAttribute('disabled', 'true');
 }
 
-// Stream inference response from WebLLM engine
+// Stream inference response from Wllama
 async function handleSend() {
     const text = chatInput.value.trim();
-    if (!text || isGenerating || !isModelLoaded || !engine) return;
+    if (!text || isGenerating || !isModelLoaded || !wllama) return;
     
     isGenerating = true;
     chatInput.value = '';
     autoResizeTextarea(chatInput);
     
-    // Disable inputs
     chatInput.setAttribute('disabled', 'true');
     btnSend.setAttribute('disabled', 'true');
     btnClearChat.setAttribute('disabled', 'true');
@@ -424,54 +306,55 @@ async function handleSend() {
     const assistantBubble = addMessageToUI('assistant', '');
     btnClearChat.removeAttribute('disabled');
     
-    // Setup message sequence
+    // Format prompt for Qwen (ChatML-like)
     const systemPrompt = paramSystem.value.trim();
-    const requestMessages = [];
+    let prompt = "";
     if (systemPrompt) {
-        requestMessages.push({ role: 'system', content: systemPrompt });
+        prompt += `<|im_start|>system\n${systemPrompt}<|im_end|>\n`;
     }
-    requestMessages.push(...chatHistory);
+    chatHistory.forEach(msg => {
+        const role = msg.role === 'user' ? 'user' : 'assistant';
+        prompt += `<|im_start|>${role}\n${msg.content}<|im_end|>\n`;
+    });
+    prompt += `<|im_start|>assistant\n`;
     
-    // Parse parameters
-    const temp = parseFloat(paramTemp.value);
-    const topP = parseFloat(paramTopP.value);
-    const maxTokens = parseInt(paramMaxTokens.value);
-    const repeatPenalty = parseFloat(paramRepeatPenalty.value);
+    const params = {
+        n_predict: parseInt(paramMaxTokens.value),
+        temperature: parseFloat(paramTemp.value),
+        top_p: parseFloat(paramTopP.value),
+        min_p: parseFloat(paramMinP.value),
+        top_k: parseInt(paramTopK.value),
+        repeat_penalty: parseFloat(paramRepeatPenalty.value),
+        mirostat: parseInt(paramMirostat.value),
+        mirostat_tau: parseFloat(paramMirostatTau.value),
+        stop: ["<|im_end|>", "<|im_start|>", "assistant\n"],
+    };
+    
     const seed = parseInt(paramSeed.value);
+    if (seed !== -1) params.seed = seed;
     
     let fullReply = '';
     let hasStartedReplying = false;
     
     try {
-        // Stream completions using WebLLM Web Worker proxy
-        const replyStream = await engine.chat.completions.create({
-            messages: requestMessages,
-            stream: true,
-            temperature: temp,
-            top_p: topP,
-            max_tokens: maxTokens,
-            repetition_penalty: repeatPenalty,
-            ...(seed !== -1 ? { seed } : {})
-        });
-        
-        for await (const chunk of replyStream) {
-            const token = chunk.choices[0]?.delta?.content;
-            if (token) {
+        await wllama.createCompletion(prompt, {
+            ...params,
+            onNewToken: (token, piece, currentText) => {
                 if (!hasStartedReplying) {
                     assistantBubble.innerHTML = '';
                     hasStartedReplying = true;
                 }
-                fullReply += token;
+                fullReply = currentText;
                 assistantBubble.innerHTML = marked.parse(fullReply);
                 scrollToBottom();
             }
-        }
+        });
         
         chatHistory.push({ role: 'assistant', content: fullReply });
         
     } catch (error) {
-        console.error("WebLLM generation failed:", error);
-        assistantBubble.innerHTML = `<span style="color: #ef4444;">エラーが発生しました。推論エンジンとの通信を確認してください。(${error.message})</span>`;
+        console.error("Wllama generation failed:", error);
+        assistantBubble.innerHTML = `<span style="color: #ef4444;">エラーが発生しました。(${error.message})</span>`;
     } finally {
         isGenerating = false;
         chatInput.removeAttribute('disabled');
@@ -483,30 +366,32 @@ async function handleSend() {
 
 // --- Persistence ---
 function saveSettings() {
-    localStorage.setItem('webgpu_selected_model', modelSelect.value);
-    localStorage.setItem('webgpu_temp', paramTemp.value);
-    localStorage.setItem('webgpu_top_p', paramTopP.value);
-    localStorage.setItem('webgpu_min_p', paramMinP.value);
-    localStorage.setItem('webgpu_top_k', paramTopK.value);
-    localStorage.setItem('webgpu_max_tokens', paramMaxTokens.value);
-    localStorage.setItem('webgpu_repeat_penalty', paramRepeatPenalty.value);
-    localStorage.setItem('webgpu_seed', paramSeed.value);
-    localStorage.setItem('webgpu_system', paramSystem.value);
+    localStorage.setItem('wllama_temp', paramTemp.value);
+    localStorage.setItem('wllama_top_p', paramTopP.value);
+    localStorage.setItem('wllama_min_p', paramMinP.value);
+    localStorage.setItem('wllama_top_k', paramTopK.value);
+    localStorage.setItem('wllama_max_tokens', paramMaxTokens.value);
+    localStorage.setItem('wllama_repeat_penalty', paramRepeatPenalty.value);
+    localStorage.setItem('wllama_seed', paramSeed.value);
+    localStorage.setItem('wllama_system', paramSystem.value);
+    localStorage.setItem('wllama_mirostat', paramMirostat.value);
+    localStorage.setItem('wllama_mirostat_tau', paramMirostatTau.value);
 }
 
 function loadSettings() {
-    if (localStorage.getItem('webgpu_selected_model')) {
-        modelSelect.value = localStorage.getItem('webgpu_selected_model');
-        selectedModel = modelSelect.value;
+    if (localStorage.getItem('wllama_temp')) paramTemp.value = localStorage.getItem('wllama_temp');
+    if (localStorage.getItem('wllama_top_p')) paramTopP.value = localStorage.getItem('wllama_top_p');
+    if (localStorage.getItem('wllama_min_p')) paramMinP.value = localStorage.getItem('wllama_min_p');
+    if (localStorage.getItem('wllama_top_k')) paramTopK.value = localStorage.getItem('wllama_top_k');
+    if (localStorage.getItem('wllama_max_tokens')) paramMaxTokens.value = localStorage.getItem('wllama_max_tokens');
+    if (localStorage.getItem('wllama_repeat_penalty')) paramRepeatPenalty.value = localStorage.getItem('wllama_repeat_penalty');
+    if (localStorage.getItem('wllama_seed')) paramSeed.value = localStorage.getItem('wllama_seed');
+    if (localStorage.getItem('wllama_system')) paramSystem.value = localStorage.getItem('wllama_system');
+    if (localStorage.getItem('wllama_mirostat')) {
+        paramMirostat.value = localStorage.getItem('wllama_mirostat');
+        mirostatTauGroup.style.display = paramMirostat.value === '0' ? 'none' : 'block';
     }
-    if (localStorage.getItem('webgpu_temp')) paramTemp.value = localStorage.getItem('webgpu_temp');
-    if (localStorage.getItem('webgpu_top_p')) paramTopP.value = localStorage.getItem('webgpu_top_p');
-    if (localStorage.getItem('webgpu_min_p')) paramMinP.value = localStorage.getItem('webgpu_min_p');
-    if (localStorage.getItem('webgpu_top_k')) paramTopK.value = localStorage.getItem('webgpu_top_k');
-    if (localStorage.getItem('webgpu_max_tokens')) paramMaxTokens.value = localStorage.getItem('webgpu_max_tokens');
-    if (localStorage.getItem('webgpu_repeat_penalty')) paramRepeatPenalty.value = localStorage.getItem('webgpu_repeat_penalty');
-    if (localStorage.getItem('webgpu_seed')) paramSeed.value = localStorage.getItem('webgpu_seed');
-    if (localStorage.getItem('webgpu_system')) paramSystem.value = localStorage.getItem('webgpu_system');
+    if (localStorage.getItem('wllama_mirostat_tau')) paramMirostatTau.value = localStorage.getItem('wllama_mirostat_tau');
     
     syncSliders();
     updateActiveModelDisplay();

@@ -11,11 +11,10 @@
 ```
 D:\Claude-Knowledge\P06_LLM\
 │
-├── 🌐 GitHub公開用 / WebGPU環境 (サーバー不要)
-│   ├── index.html       <- WebGPU用チャットUI (メイン)
-│   ├── app.js           <- WebGPU/WebLLM用メイン処理 (ESモジュール)
-│   ├── style.css        <- WebGPU用UIスタイルシート
-│   └── worker.js        <- WebLLM推論処理を別スレッドで走らせる Worker スクリプト
+├── 🌐 GitHub公開用 / Wllama環境 (サーバー不要)
+│   ├── index.html       <- GGUFチャットUI (メイン)
+│   ├── app.js           <- Wllama/GGUF用メイン処理 (ESモジュール)
+│   └── style.css        <- チャット用UIスタイルシート
 │
 ├── 💻 ローカル環境 / GGUF・Ollama環境 (要ローカルサーバー)
 │   ├── index_local.html <- 従来のローカルサーバー接続用UI (復元済み)
@@ -35,12 +34,13 @@ D:\Claude-Knowledge\P06_LLM\
 
 ## 🛠️ 各環境の動かし方
 
-### A. WebGPU環境（GitHub公開用・完全ブラウザ完結）
-*   **起動方法**: 本ファイルをローカルで動かす場合、WebGPUのセキュリティ仕様上、直接ファイルをダブルクリックするのではなく、ローカルWebサーバー（PythonやVS CodeのLive Serverなど）を介して開く必要があります。
+### A. Wllama環境（GitHub公開用・完全ブラウザ完結）
+*   **起動方法**: 本ファイルをローカルで動かす場合、ローカルWebサーバー（PythonやVS CodeのLive Serverなど）を介して開く必要があります。
     *   例: `python -m http.server 8085` を実行し、`http://localhost:8085` にアクセスする。
 *   **特徴**: 
-    *   ブラウザ側で `CreateWebWorkerMLCEngine` を使ってモデル（Gemma 2 2BやQwen 0.5Bなど）を IndexedDB にダウンロード・キャッシュし、ブラウザ上で推論します。
+    *   ブラウザ側で `Wllama` を使って特定のGGUFモデル（Qwen3-0.6B）をダウンロード・キャッシュし、ブラウザ上で推論します（WASM/CPU利用）。
     *   初回のみダウンロード待ちが発生しますが、次回以降はインターネットが切れていても起動します。
+    *   WebGPU非対応ブラウザでも動作します。
 
 ### B. ローカル接続環境（Ollama / llama.cpp 接続用）
 *   **起動方法**: `index_local.html` をブラウザで直接ダブルクリックで開くだけで起動します。
@@ -51,10 +51,11 @@ D:\Claude-Knowledge\P06_LLM\
 ---
 
 ## 📝 完了した作業
-1.  **WebGPUチャットの実装**: `index.html` / `app.js` / `style.css` / `worker.js` の新規作成および書き換え。
-2.  **WebGPU動作検証**: Qwen 2.5 0.5B モデルをロードし、ブラウザ内でローカル推論が動作することを確認（応答生成を確認済み）。
-3.  **ローカル環境の完全分離と復元**: `index_local.html` / `app_local.js` / `style_local.css` の作成による、これまでのOllama接続チャット機能の維持。
-4.  **`.gitignore` の設定**: ローカル用のコードやバッチ、Modelfileを誤ってGitHubにプッシュしないように保護。
+1.  **Wllamaチャットの実装**: `index.html` / `app.js` / `style.css` の新規作成および書き換え。
+2.  **GGUF自動ロード機能**: サイトアクセス時に `Qwen3-0.6B-Uncensored-i1-Q4_K_S.gguf` を自動取得する仕組みを構築。
+3.  **UIの最適化**: システムプロンプトをサイドバートップへ移動し、即座にカスタマイズ可能な構成へ変更。
+4.  **ローカル環境の完全分離と復元**: `index_local.html` / `app_local.js` / `style_local.css` の作成による、これまでのOllama接続チャット機能の維持。
+5.  **`.gitignore` の設定**: ローカル用のコードやバッチ、Modelfileを誤ってGitHubにプッシュしないように保護。
 
 ---
 

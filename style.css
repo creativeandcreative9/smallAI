@@ -194,6 +194,15 @@ input[type="text"]:focus, select:focus, textarea:focus {
     box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
+/* Sidebar System Prompt Prominence */
+#param-system {
+    min-height: 160px;
+    font-size: 13px;
+    line-height: 1.5;
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
 .slider-group {
     display: flex;
     align-items: center;

@@ -21,37 +21,32 @@
         <!-- Sidebar / Settings Panel -->
         <aside id="sidebar">
             <div class="logo-section">
-                <div class="logo-icon">W</div>
-                <h1>WebGPU Chat</h1>
+                <div class="logo-icon">G</div>
+                <h1>GGUF Local Chat</h1>
             </div>
 
-            <!-- WebGPU Connection Panel -->
+            <!-- AI Engine & System Prompt -->
             <div class="panel-section">
                 <div class="panel-title">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
                     </svg>
-                    WebGPU 設定
-                </div>
-                <div class="webgpu-status-container" id="webgpu-status-container">
-                    <span class="status-indicator-dot" id="status-indicator"></span>
-                    <span id="status-text">WebGPU チェック中...</span>
+                    システム設定
                 </div>
                 <div class="form-group">
-                    <label for="model-select">モデル選択</label>
-                    <select id="model-select" disabled>
-                        <option value="gemma-2-2b-it-q4f16_1-MLC">Gemma 2 2B It (Q4_16, 1.6GB)</option>
-                        <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC">Qwen 2.5 0.5B It (Q4_16, 350MB)</option>
-                        <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC">Llama 3.2 1B It (Q4_16, 1.0GB)</option>
-                        <option value="Phi-3-mini-128k-instruct-q4f16_1-MLC">Phi 3 Mini It (Q4_16, 2.2GB)</option>
-                    </select>
+                    <label for="param-system">システムプロンプト<span class="info-icon" data-tooltip="AIキャラクターの設定や回答の振る舞い（「深く考えてから回答して」など）を指示します。">?</span></label>
+                    <textarea id="param-system" rows="8" placeholder="AIの役割や設定を入力...">You are a helpful, respectful, and honest assistant.</textarea>
                 </div>
-                <button id="btn-load-model" class="btn btn-primary" disabled>モデルをロード</button>
                 
+                <div class="webgpu-status-container" id="webgpu-status-container">
+                    <span class="status-indicator-dot" id="status-indicator"></span>
+                    <span id="status-text">AIエンジン初期化中...</span>
+                </div>
+
                 <!-- Loading Progress Section -->
-                <div class="progress-section" id="progress-section" style="display: none;">
+                <div class="progress-section" id="progress-section">
                     <div class="progress-info">
-                        <span class="progress-message" id="progress-message">初期化中...</span>
+                        <span class="progress-message" id="progress-message">準備中...</span>
                         <span class="progress-percent" id="progress-percent">0%</span>
                     </div>
                     <div class="progress-bar-wrapper">
@@ -128,10 +123,6 @@
                     <label for="param-seed">ランダムシード値<span class="info-icon" data-tooltip="乱数の起点となる整数。特定の数値（例: 42）を入力すると、回答結果が完全に固定され再現されます（-1で完全ランダム）。">?</span></label>
                     <input type="number" id="param-seed" value="-1" min="-1" step="1" style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; color: var(--text-primary); outline: none; transition: all 0.2s ease;">
                 </div>
-                <div class="form-group">
-                    <label for="param-system">システムプロンプト<span class="info-icon" data-tooltip="AIキャラクターの設定や回答の振る舞い（「深く考えてから回答して」など）を指示します。">?</span></label>
-                    <textarea id="param-system" rows="3" placeholder="AIの役割や設定を入力...">You are a helpful, respectful, and honest assistant.</textarea>
-                </div>
                 <button id="btn-reset-params" class="btn">パラメータ初期化</button>
             </div>
         </aside>
@@ -141,7 +132,7 @@
             <header>
                 <div class="active-model-title">
                     <span class="active-model-label">アクティブモデル</span>
-                    <span class="active-model-name" id="active-model-display">選択されていません</span>
+                    <span class="active-model-name" id="active-model-display">初期化中...</span>
                 </div>
                 <button id="btn-clear-chat" class="btn" disabled>
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -156,14 +147,14 @@
                 <!-- Welcome Screen -->
                 <div class="welcome-screen" id="welcome-screen">
                     <div class="welcome-icon">⚡</div>
-                    <h2>WebGPU ブラウザチャットへようこそ</h2>
-                    <p>WebGPUテクノロジーを利用し、ブラウザ内でローカルにLLMモデルを実行してプライベートに対話することができます。外部サーバーとの通信は一切発生しません。</p>
+                    <h2>GGUF ローカルチャットへようこそ</h2>
+                    <p>ブラウザ内でローカルにLLMモデルを実行してプライベートに対話することができます。外部サーバーとの通信は一切発生しません。</p>
                     
                     <div class="quick-instructions">
-                        <strong>⚡ WebGPU ローカル実行ガイド:</strong><br><br>
-                        1. 左側のパネルから、利用したいモデルを選択します（軽量な <strong>Qwen 2.5 0.5B</strong> が最初はダウンロードが早くておすすめです）。<br>
-                        2. 「モデルをロード」ボタンを押すと、バックグラウンドでモデルデータのダウンロードとWebGPUキャッシュへの初期化が始まります。<br>
-                        3. 初回のみダウンロード時間がかかりますが（約350MB〜2.2GB）、ダウンロードされたデータはブラウザの IndexedDB に安全にキャッシュされ、次回からは瞬時に起動します。
+                        <strong>⚡ クイックガイド:</strong><br><br>
+                        1. ページを開くと自動的にモデル（<strong>Qwen3-0.6B</strong>）のロードが始まります。<br>
+                        2. ロードが完了すると、下の入力欄からすぐにチャットを開始できます。<br>
+                        3. 左側の「システム設定」から、AIのキャラクター設定や性格を自由に変更できます。
                     </div>
                 </div>
             </div>
