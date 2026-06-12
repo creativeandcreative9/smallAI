@@ -9,7 +9,7 @@ const WLLAMA_CONFIG_PATHS = {
 };
 
 const CONFIG = {
-    modelUrl: "https://huggingface.co/mradermacher/Qwen3-0.6B-Uncensored-i1-GGUF/resolve/main/Qwen3-0.6B-Uncensored-i1-Q4_K_S.gguf",
+    modelUrl: "https://huggingface.co/mradermacher/Qwen3-0.6B-Uncensored-i1-GGUF/resolve/main/Qwen3-0.6B-Uncensored.i1-Q4_K_S.gguf",
     modelName: "Qwen3-0.6B-Uncensored (GGUF)",
 };
 
