@@ -6,8 +6,8 @@ const WLLAMA_CONFIG_PATHS = {
 };
 
 const CONFIG = {
-    modelUrl: "https://huggingface.co/mradermacher/Qwen2.5-0.5B-Instruct-abliterated-v3-GGUF/resolve/main/Qwen2.5-0.5B-Instruct-abliterated-v3.Q8_0.gguf",
-    modelName: "Qwen2.5-0.5B-Instruct-abliterated-v3 (GGUF)",
+    modelUrl: "https://huggingface.co/Xlnk/Llama-3.2-1B-Instruct-Uncensored-GGUF/resolve/main/Llama-3.2-1B-Instruct-Uncensored.Q4_K_M.gguf",
+    modelName: "Llama-3.2-1B-Instruct-Uncensored (GGUF)",
 };
 
 // --- State Management ---
