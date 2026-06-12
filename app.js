@@ -206,6 +206,7 @@ async function initWllama() {
         progressMessage.textContent = 'モデルのダウンロード中...';
 
         await wllama.loadModelFromUrl(CONFIG.modelUrl, {
+            n_ctx: 2048, // Limit context to 2048 to prevent ABORT (OOM) on browsers
             progressCallback: ({ loaded, total }) => {
                 const percent = Math.round((loaded / total) * 100);
                 progressBar.style.width = `${percent}%`;
@@ -304,13 +305,17 @@ async function handleSend() {
     const assistantBubble = addMessageToUI('assistant', '');
     btnClearChat.removeAttribute('disabled');
     
-    // Setup message sequence
+    // Manual ChatML formatting (more reliable for specific Qwen GGUFs)
     const systemPrompt = paramSystem.value.trim();
-    const messages = [];
+    let prompt = "";
     if (systemPrompt) {
-        messages.push({ role: 'system', content: systemPrompt });
+        prompt += `<|im_start|>system\n${systemPrompt}<|im_end|>\n`;
     }
-    messages.push(...chatHistory);
+    chatHistory.forEach(msg => {
+        const role = msg.role === 'user' ? 'user' : 'assistant';
+        prompt += `<|im_start|>${role}\n${msg.content}<|im_end|>\n`;
+    });
+    prompt += `<|im_start|>assistant\n`;
     
     const params = {
         max_tokens: parseInt(paramMaxTokens.value),
@@ -321,8 +326,7 @@ async function handleSend() {
         penalty_repeat: parseFloat(paramRepeatPenalty.value),
         mirostat: parseInt(paramMirostat.value),
         mirostat_tau: parseFloat(paramMirostatTau.value),
-        // Fallback for models without a built-in jinja template in GGUF metadata
-        chat_template: "{% for message in messages %}{{'<|im_start|>' + message['role'] + '\n' + message['content'] + '<|im_end|>' + '\n'}}{% endfor %}{% if add_generation_prompt %}{{ '<|im_start|>assistant\n' }}{% endif %}"
+        stop: ["<|im_end|>", "<|im_start|>", "assistant\n"]
     };
     
     const seed = parseInt(paramSeed.value);
@@ -332,24 +336,18 @@ async function handleSend() {
     let hasStartedReplying = false;
     
     try {
-        const stream = await wllama.createChatCompletion({
-            messages,
-            stream: true,
-            ...params
-        });
-        
-        for await (const chunk of stream) {
-            const token = chunk.choices[0]?.delta?.content;
-            if (token) {
+        await wllama.createCompletion(prompt, {
+            ...params,
+            onNewToken: (token, piece, currentText) => {
                 if (!hasStartedReplying) {
                     assistantBubble.innerHTML = '';
                     hasStartedReplying = true;
                 }
-                fullReply += token;
+                fullReply = currentText;
                 assistantBubble.innerHTML = marked.parse(fullReply);
                 scrollToBottom();
             }
-        }
+        });
         
         chatHistory.push({ role: 'assistant', content: fullReply });
         
