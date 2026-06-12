@@ -206,7 +206,10 @@ async function initWllama() {
         progressMessage.textContent = 'モデルのダウンロード中...';
 
         await wllama.loadModelFromUrl(CONFIG.modelUrl, {
-            n_ctx: 2048, // Limit context to 2048 to prevent ABORT (OOM) on browsers
+            n_ctx: 1024,             // Aggressively reduce context size to 1k for stability
+            cache_type_k: 'q4_0',    // Quantize KV cache to save memory
+            cache_type_v: 'q4_0',    // Quantize KV cache to save memory
+            n_threads: 4,            // Explicitly set threads for better compatibility
             progressCallback: ({ loaded, total }) => {
                 const percent = Math.round((loaded / total) * 100);
                 progressBar.style.width = `${percent}%`;
