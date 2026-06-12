@@ -6,8 +6,8 @@ const WLLAMA_CONFIG_PATHS = {
 };
 
 const CONFIG = {
-    modelUrl: "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf",
-    modelName: "Qwen2.5-1.5B-Instruct (GGUF)",
+    modelUrl: "https://huggingface.co/mradermacher/Qwen2.5-0.5B-Instruct-abliterated-v3-GGUF/resolve/main/Qwen2.5-0.5B-Instruct-abliterated-v3.Q8_0.gguf",
+    modelName: "Qwen2.5-0.5B-Instruct-abliterated-v3 (GGUF)",
 };
 
 // --- State Management ---
@@ -76,13 +76,13 @@ const DEFAULTS = {
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Sync sliders UI
     syncSliders();
-    
+
     // 2. Setup marked.js configurations
     marked.setOptions({
         breaks: true,
         gfm: true
     });
-    
+
     // 3. Load saved settings from localStorage
     loadSettings();
 
@@ -196,7 +196,7 @@ function updateActiveModelDisplay() {
 async function initWllama() {
     statusIndicator.className = 'status-indicator-dot loading';
     statusText.textContent = 'エンジン初期化中...';
-    
+
     progressSection.style.display = 'block';
     progressMessage.textContent = 'エンジンの読み込み中...';
 
@@ -212,7 +212,7 @@ async function initWllama() {
             cache_type_k: 'q4_0',    // Quantize KV cache to save memory
             cache_type_v: 'q4_0',    // Quantize KV cache to save memory
             n_threads: 1,            // Force single-thread (GitHub Pages lacks COOP/COEP for SharedArrayBuffer)
-            useCache: true,          // Allow caching for faster subsequent loads
+            useCache: false,         // Force fresh download to bypass any corrupted cache from previous 404
             progressCallback: ({ loaded, total }) => {
                 const percent = Math.round((loaded / total) * 100);
                 progressBar.style.width = `${percent}%`;
@@ -229,7 +229,7 @@ async function initWllama() {
         progressPercent.textContent = '100%';
 
         updateActiveModelDisplay();
-        
+
         // Hide progress section after success
         setTimeout(() => {
             progressSection.style.display = 'none';
@@ -249,17 +249,17 @@ function addMessageToUI(role, content) {
     if (welcomeScreen) {
         welcomeScreen.style.display = 'none';
     }
-    
+
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}`;
-    
+
     const metaDiv = document.createElement('div');
     metaDiv.className = 'message-meta';
     metaDiv.textContent = role === 'user' ? 'あなた' : 'AI';
-    
+
     const bubbleDiv = document.createElement('div');
     bubbleDiv.className = 'message-bubble';
-    
+
     if (content === '') {
         bubbleDiv.innerHTML = `
             <div class="typing-loader">
@@ -271,11 +271,11 @@ function addMessageToUI(role, content) {
     } else {
         bubbleDiv.innerHTML = marked.parse(content);
     }
-    
+
     messageDiv.appendChild(metaDiv);
     messageDiv.appendChild(bubbleDiv);
     chatHistoryDiv.appendChild(messageDiv);
-    
+
     scrollToBottom();
     return bubbleDiv;
 }
@@ -296,21 +296,21 @@ function clearChat() {
 async function handleSend() {
     const text = chatInput.value.trim();
     if (!text || isGenerating || !isModelLoaded || !wllama) return;
-    
+
     isGenerating = true;
     chatInput.value = '';
     autoResizeTextarea(chatInput);
-    
+
     chatInput.setAttribute('disabled', 'true');
     btnSend.setAttribute('disabled', 'true');
     btnClearChat.setAttribute('disabled', 'true');
-    
+
     chatHistory.push({ role: 'user', content: text });
     addMessageToUI('user', text);
-    
+
     const assistantBubble = addMessageToUI('assistant', '');
     btnClearChat.removeAttribute('disabled');
-    
+
     // Manual ChatML formatting (more reliable for specific Qwen GGUFs)
     const systemPrompt = paramSystem.value.trim();
     let prompt = "";
@@ -322,7 +322,7 @@ async function handleSend() {
         prompt += `<|im_start|>${role}\n${msg.content}<|im_end|>\n`;
     });
     prompt += `<|im_start|>assistant\n`;
-    
+
     const params = {
         max_tokens: parseInt(paramMaxTokens.value),
         temperature: parseFloat(paramTemp.value),
@@ -334,13 +334,13 @@ async function handleSend() {
         mirostat_tau: parseFloat(paramMirostatTau.value),
         stop: ["<|im_end|>", "<|im_start|>", "assistant\n"]
     };
-    
+
     const seed = parseInt(paramSeed.value);
     if (seed !== -1) params.seed = seed;
-    
+
     let fullReply = '';
     let hasStartedReplying = false;
-    
+
     try {
         await wllama.createCompletion({
             prompt: prompt,
@@ -357,9 +357,9 @@ async function handleSend() {
                 scrollToBottom();
             }
         });
-        
+
         chatHistory.push({ role: 'assistant', content: fullReply });
-        
+
     } catch (error) {
         console.error("Wllama generation failed:", error);
         assistantBubble.innerHTML = `<span style="color: #ef4444;">エラーが発生しました。(${error.message})</span>`;
@@ -400,7 +400,7 @@ function loadSettings() {
         mirostatTauGroup.style.display = paramMirostat.value === '0' ? 'none' : 'block';
     }
     if (localStorage.getItem('wllama_mirostat_tau')) paramMirostatTau.value = localStorage.getItem('wllama_mirostat_tau');
-    
+
     syncSliders();
     updateActiveModelDisplay();
 }
