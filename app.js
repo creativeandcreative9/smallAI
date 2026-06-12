@@ -1,10 +1,16 @@
-import { Wllama } from "https://cdn.jsdelivr.net/npm/@wllama/wllama/esm/index.js";
+import { Wllama } from "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.4.1/esm/index.js";
 
 // --- Configuration ---
+const WLLAMA_CONFIG_PATHS = {
+    "single-thread/wllama.wasm": "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.4.1/esm/single-thread/wllama.wasm",
+    "single-thread/wllama.js": "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.4.1/esm/single-thread/wllama.js",
+    "multi-thread/wllama.wasm": "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.4.1/esm/multi-thread/wllama.wasm",
+    "multi-thread/wllama.js": "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.4.1/esm/multi-thread/wllama.js",
+};
+
 const CONFIG = {
     modelUrl: "https://huggingface.co/mradermacher/Qwen3-0.6B-Uncensored-i1-GGUF/resolve/main/Qwen3-0.6B-Uncensored-i1-Q4_K_S.gguf",
     modelName: "Qwen3-0.6B-Uncensored (GGUF)",
-    wasmPath: "https://cdn.jsdelivr.net/npm/@wllama/wllama/esm/" // Standard CDN path
 };
 
 // --- State Management ---
@@ -198,10 +204,8 @@ async function initWllama() {
     progressMessage.textContent = 'エンジンの読み込み中...';
 
     try {
-        // Create Wllama instance
-        wllama = new Wllama({
-            "default": `${CONFIG.wasmPath}wasm/wllama.wasm`
-        });
+        // Create Wllama instance with proper WASM paths (single/multi-thread)
+        wllama = new Wllama(WLLAMA_CONFIG_PATHS);
 
         progressMessage.textContent = 'モデルのダウンロード中...';
 
@@ -209,7 +213,7 @@ async function initWllama() {
             n_ctx: 1024,             // Aggressively reduce context size to 1k for stability
             cache_type_k: 'q4_0',    // Quantize KV cache to save memory
             cache_type_v: 'q4_0',    // Quantize KV cache to save memory
-            n_threads: 4,            // Explicitly set threads for better compatibility
+            n_threads: 1,            // Force single-thread (GitHub Pages lacks COOP/COEP for SharedArrayBuffer)
             progressCallback: ({ loaded, total }) => {
                 const percent = Math.round((loaded / total) * 100);
                 progressBar.style.width = `${percent}%`;
