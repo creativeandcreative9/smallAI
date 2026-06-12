@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <!-- Marked.js for robust markdown rendering in browser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
+
 <body>
     <div class="app-container">
         <!-- Sidebar Toggle for Mobile -->
@@ -29,15 +31,19 @@
             <div class="panel-section">
                 <div class="panel-title">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                        <path
+                            d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4">
+                        </path>
                     </svg>
                     システム設定
                 </div>
                 <div class="form-group">
-                    <label for="param-system">システムプロンプト<span class="info-icon" data-tooltip="AIキャラクターの設定や回答の振る舞い（「深く考えてから回答して」など）を指示します。">?</span></label>
-                    <textarea id="param-system" rows="8" placeholder="AIの役割や設定を入力...">You are a helpful, respectful, and honest assistant.</textarea>
+                    <label for="param-system">システムプロンプト<span class="info-icon"
+                            data-tooltip="AIキャラクターの設定や回答の振る舞い（「深く考えてから回答して」など）を指示します。">?</span></label>
+                    <textarea id="param-system" rows="8"
+                        placeholder="AIの役割や設定を入力...">You are a helpful, respectful, and honest assistant.</textarea>
                 </div>
-                
+
                 <div class="webgpu-status-container" id="webgpu-status-container">
                     <span class="status-indicator-dot" id="status-indicator"></span>
                     <span id="status-text">AIエンジン初期化中...</span>
@@ -59,54 +65,63 @@
             <div class="panel-section">
                 <div class="panel-title">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                        <path
+                            d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4">
+                        </path>
                     </svg>
                     推論パラメータ
                 </div>
                 <div class="form-group">
                     <div class="slider-group">
-                        <label for="param-temp">Temperature (温度)<span class="info-icon" data-tooltip="出力のランダム性を制御。値が高いほどより創造的（脱線しやすく）になり、低いほど論理的かつ堅実になります。">?</span></label>
+                        <label for="param-temp">Temperature (温度)<span class="info-icon"
+                                data-tooltip="出力のランダム性を制御。値が高いほどより創造的（脱線しやすく）になり、低いほど論理的かつ堅実になります。">?</span></label>
                         <span class="slider-val" id="val-temp">0.7</span>
                     </div>
                     <input type="range" id="param-temp" min="0" max="2" step="0.1" value="0.7">
                 </div>
                 <div class="form-group">
                     <div class="slider-group">
-                        <label for="param-top-p">Top-P (p-max)<span class="info-icon" data-tooltip="累積確率がこの値以下のトークンから選択。値を下げることで、確率の低い言葉を排除し確実な単語のみを選ばせます。">?</span></label>
+                        <label for="param-top-p">Top-P (p-max)<span class="info-icon"
+                                data-tooltip="累積確率がこの値以下のトークンから選択。値を下げることで、確率の低い言葉を排除し確実な単語のみを選ばせます。">?</span></label>
                         <span class="slider-val" id="val-top-p">0.9</span>
                     </div>
                     <input type="range" id="param-top-p" min="0" max="1" step="0.05" value="0.9">
                 </div>
                 <div class="form-group">
                     <div class="slider-group">
-                        <label for="param-min-p">Min-P<span class="info-icon" data-tooltip="最有力単語の確率にこの値を掛けた値未満の低い候補をカット。Top-P/Top-Kよりも自然に不自然な語彙をカットできます。">?</span></label>
+                        <label for="param-min-p">Min-P<span class="info-icon"
+                                data-tooltip="最有力単語の確率にこの値を掛けた値未満の低い候補をカット。Top-P/Top-Kよりも自然に不自然な語彙をカットできます。">?</span></label>
                         <span class="slider-val" id="val-min-p">0.05</span>
                     </div>
                     <input type="range" id="param-min-p" min="0" max="1" step="0.01" value="0.05">
                 </div>
                 <div class="form-group">
                     <div class="slider-group">
-                        <label for="param-top-k">Top-K<span class="info-icon" data-tooltip="確率が高い上位K個の単語のみを候補に残します。値を小さくすると無難で安全な表現に固定されます（0で無効）。">?</span></label>
+                        <label for="param-top-k">Top-K<span class="info-icon"
+                                data-tooltip="確率が高い上位K個の単語のみを候補に残します。値を小さくすると無難で安全な表現に固定されます（0で無効）。">?</span></label>
                         <span class="slider-val" id="val-top-k">40</span>
                     </div>
                     <input type="range" id="param-top-k" min="0" max="100" step="5" value="40">
                 </div>
                 <div class="form-group">
                     <div class="slider-group">
-                        <label for="param-max-tokens">最大出力トークン数<span class="info-icon" data-tooltip="1回の発言で生成されるトークンの最大数です。回答が途中で切れる場合はこの値を大きくしてください。">?</span></label>
+                        <label for="param-max-tokens">最大出力トークン数<span class="info-icon"
+                                data-tooltip="1回の発言で生成されるトークンの最大数です。回答が途中で切れる場合はこの値を大きくしてください。">?</span></label>
                         <span class="slider-val" id="val-max-tokens">2048</span>
                     </div>
                     <input type="range" id="param-max-tokens" min="256" max="16384" step="256" value="2048">
                 </div>
                 <div class="form-group">
                     <div class="slider-group">
-                        <label for="param-repeat-penalty">Repeat Penalty<span class="info-icon" data-tooltip="同じ単語やフレーズを繰り返すこと（ループ現象）を防止。値を大きくすると、同じ言い回しを避けるようになります。">?</span></label>
+                        <label for="param-repeat-penalty">Repeat Penalty<span class="info-icon"
+                                data-tooltip="同じ単語やフレーズを繰り返すこと（ループ現象）を防止。値を大きくすると、同じ言い回しを避けるようになります。">?</span></label>
                         <span class="slider-val" id="val-repeat-penalty">1.1</span>
                     </div>
                     <input type="range" id="param-repeat-penalty" min="0.5" max="2.0" step="0.05" value="1.1">
                 </div>
                 <div class="form-group">
-                    <label for="param-mirostat">Mirostat モード<span class="info-icon" data-tooltip="文章の難易度（パープレキシティ）を一定に保つよう動的に自己調整する機能。長文生成の崩壊を防ぐのに有効です。">?</span></label>
+                    <label for="param-mirostat">Mirostat モード<span class="info-icon"
+                            data-tooltip="文章の難易度（パープレキシティ）を一定に保つよう動的に自己調整する機能。長文生成の崩壊を防ぐのに有効です。">?</span></label>
                     <select id="param-mirostat">
                         <option value="0">無効 (通常)</option>
                         <option value="2">Mirostat 2.0</option>
@@ -114,14 +129,17 @@
                 </div>
                 <div class="form-group" id="mirostat-tau-group" style="display:none;">
                     <div class="slider-group">
-                        <label for="param-mirostat-tau">Mirostat Tau (目標難易度)<span class="info-icon" data-tooltip="Mirostat作動時の目標とする文章の複雑さ。値が低いとシンプルで無難、高いと表現力豊かで複雑な文章になります。">?</span></label>
+                        <label for="param-mirostat-tau">Mirostat Tau (目標難易度)<span class="info-icon"
+                                data-tooltip="Mirostat作動時の目標とする文章の複雑さ。値が低いとシンプルで無難、高いと表現力豊かで複雑な文章になります。">?</span></label>
                         <span class="slider-val" id="val-mirostat-tau">5.0</span>
                     </div>
                     <input type="range" id="param-mirostat-tau" min="0" max="10" step="0.5" value="5.0">
                 </div>
                 <div class="form-group">
-                    <label for="param-seed">ランダムシード値<span class="info-icon" data-tooltip="乱数の起点となる整数。特定の数値（例: 42）を入力すると、回答結果が完全に固定され再現されます（-1で完全ランダム）。">?</span></label>
-                    <input type="number" id="param-seed" value="-1" min="-1" step="1" style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; color: var(--text-primary); outline: none; transition: all 0.2s ease;">
+                    <label for="param-seed">ランダムシード値<span class="info-icon"
+                            data-tooltip="乱数の起点となる整数。特定の数値（例: 42）を入力すると、回答結果が完全に固定され再現されます（-1で完全ランダム）。">?</span></label>
+                    <input type="number" id="param-seed" value="-1" min="-1" step="1"
+                        style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; color: var(--text-primary); outline: none; transition: all 0.2s ease;">
                 </div>
                 <button id="btn-reset-params" class="btn">パラメータ初期化</button>
             </div>
@@ -136,7 +154,9 @@
                 </div>
                 <button id="btn-clear-chat" class="btn" disabled>
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        <path
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                        </path>
                     </svg>
                     チャット履歴クリア
                 </button>
@@ -149,7 +169,7 @@
                     <div class="welcome-icon">⚡</div>
                     <h2>GGUF ローカルチャットへようこそ</h2>
                     <p>ブラウザ内でローカルにLLMモデルを実行してプライベートに対話することができます。外部サーバーとの通信は一切発生しません。</p>
-                    
+
                     <div class="quick-instructions">
                         <strong>⚡ クイックガイド:</strong><br><br>
                         1. ページを開くと自動的にモデル（<strong>Qwen3-0.6B</strong>）のロードが始まります。<br>
@@ -165,7 +185,8 @@
                     <textarea id="chat-input" placeholder="メッセージを入力... (Shift + Enterで改行)" rows="1" disabled></textarea>
                     <div class="input-actions">
                         <button id="btn-send" class="send-btn" disabled aria-label="送信">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
+                                viewBox="0 0 24 24">
                                 <path d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                             </svg>
                         </button>
@@ -177,4 +198,5 @@
 
     <script type="module" src="app.js"></script>
 </body>
+
 </html>
