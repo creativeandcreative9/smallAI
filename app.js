@@ -6,8 +6,8 @@ const WLLAMA_CONFIG_PATHS = {
 };
 
 const CONFIG = {
-    modelUrl: "https://huggingface.co/mradermacher/Qwen3-0.6B-Uncensored-i1-GGUF/resolve/main/Qwen3-0.6B-Uncensored.i1-Q4_K_S.gguf",
-    modelName: "Qwen3-0.6B-Uncensored (GGUF)",
+    modelUrl: "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf",
+    modelName: "Qwen2.5-1.5B-Instruct (GGUF)",
 };
 
 // --- State Management ---
@@ -212,7 +212,7 @@ async function initWllama() {
             cache_type_k: 'q4_0',    // Quantize KV cache to save memory
             cache_type_v: 'q4_0',    // Quantize KV cache to save memory
             n_threads: 1,            // Force single-thread (GitHub Pages lacks COOP/COEP for SharedArrayBuffer)
-            useCache: false,         // Force fresh download to bypass any corrupted cache from previous 404
+            useCache: true,          // Allow caching for faster subsequent loads
             progressCallback: ({ loaded, total }) => {
                 const percent = Math.round((loaded / total) * 100);
                 progressBar.style.width = `${percent}%`;
