@@ -212,7 +212,7 @@ async function initWllama() {
             cache_type_k: 'q4_0',    // Quantize KV cache to save memory
             cache_type_v: 'q4_0',    // Quantize KV cache to save memory
             n_threads: 1,            // Force single-thread (GitHub Pages lacks COOP/COEP for SharedArrayBuffer)
-            useCache: false,         // Force fresh download to bypass any corrupted cache from previous 404
+            useCache: true,          // Allow caching for faster subsequent loads
             progressCallback: ({ loaded, total }) => {
                 const percent = Math.round((loaded / total) * 100);
                 progressBar.style.width = `${percent}%`;
@@ -329,7 +329,7 @@ async function handleSend() {
         top_p: parseFloat(paramTopP.value),
         min_p: parseFloat(paramMinP.value),
         top_k: parseInt(paramTopK.value),
-        penalty_repeat: parseFloat(paramRepeatPenalty.value),
+        repeat_penalty: parseFloat(paramRepeatPenalty.value),
         mirostat: parseInt(paramMirostat.value),
         mirostat_tau: parseFloat(paramMirostatTau.value),
         stop: ["<|im_end|>", "<|im_start|>", "assistant\n"]
